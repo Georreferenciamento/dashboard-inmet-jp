@@ -51,7 +51,6 @@ meses_pt = [
     "Dezembro"
 ]
 
-# Converte o número do mês para o nome em português
 df["Mes_Nome"] = df["Mes_Num"].apply(
     lambda x: meses_pt[int(x) - 1] if pd.notna(x) else None
 )
@@ -100,60 +99,128 @@ st.subheader(
     f"📈 Indicadores Principais ({ano_escolhido} / {mes_escolhido})"
 )
 
+# Inicialização dos indicadores
+temp_max_val = None
+data_max_val = "N/D"
+
+temp_min_val = None
+data_min_val = "N/D"
+
+chuva_total = None
+umidade_media = None
+
+
 if not df_filtrado.empty:
 
-    # Temperatura máxima
-    idx_max = df_filtrado["Temp. Max. (C)"].idxmax()
-    row_max = df_filtrado.loc[idx_max]
-
-    temp_max_val = row_max["Temp. Max. (C)"]
-    data_max_val = row_max["data_hora_utc"].strftime(
-        "%d/%m/%Y às %H:%M"
+    # ---------------------------------------------------------------
+    # TEMPERATURA MÁXIMA
+    # ---------------------------------------------------------------
+    dados_max = df_filtrado.dropna(
+        subset=["Temp. Max. (C)"]
     )
 
-    # Temperatura mínima
-    idx_min = df_filtrado["Temp. Min. (C)"].idxmin()
-    row_min = df_filtrado.loc[idx_min]
+    if not dados_max.empty:
 
-    temp_min_val = row_min["Temp. Min. (C)"]
-    data_min_val = row_min["data_hora_utc"].strftime(
-        "%d/%m/%Y às %H:%M"
+        idx_max = dados_max["Temp. Max. (C)"].idxmax()
+        row_max = dados_max.loc[idx_max]
+
+        temp_max_val = row_max["Temp. Max. (C)"]
+
+        data_max_val = row_max["data_hora_utc"].strftime(
+            "%d/%m/%Y às %H:%M"
+        )
+
+
+    # ---------------------------------------------------------------
+    # TEMPERATURA MÍNIMA
+    # ---------------------------------------------------------------
+    dados_min = df_filtrado.dropna(
+        subset=["Temp. Min. (C)"]
     )
 
-    # Chuva e umidade
-    chuva_total = df_filtrado["Chuva (mm)"].sum()
-    umidade_media = df_filtrado["Umi. Ins. (%)"].mean()
+    if not dados_min.empty:
 
-else:
-    temp_max_val, data_max_val = 0, "N/A"
-    temp_min_val, data_min_val = 0, "N/A"
-    chuva_total, umidade_media = 0, 0
+        idx_min = dados_min["Temp. Min. (C)"].idxmin()
+        row_min = dados_min.loc[idx_min]
+
+        temp_min_val = row_min["Temp. Min. (C)"]
+
+        data_min_val = row_min["data_hora_utc"].strftime(
+            "%d/%m/%Y às %H:%M"
+        )
 
 
-# Exibição dos indicadores
+    # ---------------------------------------------------------------
+    # CHUVA ACUMULADA
+    # ---------------------------------------------------------------
+    dados_chuva = df_filtrado["Chuva (mm)"].dropna()
+
+    if not dados_chuva.empty:
+        chuva_total = dados_chuva.sum()
+
+
+    # ---------------------------------------------------------------
+    # UMIDADE MÉDIA
+    # ---------------------------------------------------------------
+    dados_umidade = df_filtrado["Umi. Ins. (%)"].dropna()
+
+    if not dados_umidade.empty:
+        umidade_media = dados_umidade.mean()
+
+
+# -------------------------------------------------------------------
+# EXIBIÇÃO DOS INDICADORES
+# -------------------------------------------------------------------
 col1, col2, col3, col4 = st.columns(4)
 
 col1.metric(
     "🌡️ Temp. Máxima",
-    f"{temp_max_val:.1f} °C"
+    f"{temp_max_val:.1f} °C" if temp_max_val is not None else "N/D"
 )
-col1.caption(f"📅 Ocorrido em: {data_max_val}")
+
+col1.caption(
+    f"📅 Ocorrido em: {data_max_val}"
+)
 
 col2.metric(
     "❄️ Temp. Mínima",
-    f"{temp_min_val:.1f} °C"
+    f"{temp_min_val:.1f} °C" if temp_min_val is not None else "N/D"
 )
-col2.caption(f"📅 Ocorrido em: {data_min_val}")
+
+col2.caption(
+    f"📅 Ocorrido em: {data_min_val}"
+)
 
 col3.metric(
     "🌧️ Chuva Acumulada",
-    f"{chuva_total:.1f} mm"
+    f"{chuva_total:.1f} mm" if chuva_total is not None else "N/D"
 )
 
 col4.metric(
     "💧 Umidade Média",
-    f"{umidade_media:.1f} %"
+    f"{umidade_media:.1f} %" if umidade_media is not None else "N/D"
 )
+
+
+# -------------------------------------------------------------------
+# AVISOS SOBRE AUSÊNCIA DE DADOS
+# -------------------------------------------------------------------
+if df_filtrado.empty:
+
+    st.warning(
+        "Não existem registros para o período selecionado."
+    )
+
+elif (
+    temp_max_val is None
+    and temp_min_val is None
+    and chuva_total is None
+    and umidade_media is None
+):
+
+    st.warning(
+        "Existem registros, mas não há dados meteorológicos válidos para este período."
+    )
 
 
 # -------------------------------------------------------------------
@@ -161,24 +228,39 @@ col4.metric(
 # -------------------------------------------------------------------
 st.markdown("---")
 
-# Evolução térmica
+# ---------------------------------------------------------------
+# EVOLUÇÃO TÉRMICA
+# ---------------------------------------------------------------
 st.subheader("Evolução Térmica (Máximas e Mínimas)")
 
-fig_temp = px.line(
-    df_filtrado,
-    x="data_hora_utc",
-    y=["Temp. Max. (C)", "Temp. Min. (C)"],
-    labels={
-        "data_hora_utc": "Data e Hora",
-        "value": "Temperatura (°C)",
-        "variable": "Métrica"
-    }
+dados_temp = df_filtrado.dropna(
+    subset=["Temp. Max. (C)", "Temp. Min. (C)"],
+    how="all"
 )
 
-st.plotly_chart(
-    fig_temp,
-    use_container_width=True
-)
+if not dados_temp.empty:
+
+    fig_temp = px.line(
+        dados_temp,
+        x="data_hora_utc",
+        y=["Temp. Max. (C)", "Temp. Min. (C)"],
+        labels={
+            "data_hora_utc": "Data e Hora",
+            "value": "Temperatura (°C)",
+            "variable": "Métrica"
+        }
+    )
+
+    st.plotly_chart(
+        fig_temp,
+        use_container_width=True
+    )
+
+else:
+
+    st.info(
+        "Não existem dados de temperatura para gerar o gráfico neste período."
+    )
 
 
 # -------------------------------------------------------------------
@@ -186,41 +268,57 @@ st.plotly_chart(
 # -------------------------------------------------------------------
 st.subheader("Precipitação Acumulada")
 
-if ano_escolhido == "Todos os Anos":
+dados_chuva_grafico = df_filtrado.dropna(
+    subset=["Chuva (mm)"]
+)
 
-    chuva_agrupada = (
-        df_filtrado.groupby("Ano")["Chuva (mm)"]
-        .sum()
-        .reset_index()
-    )
+if not dados_chuva_grafico.empty:
 
-    fig_chuva = px.bar(
-        chuva_agrupada,
-        x="Ano",
-        y="Chuva (mm)",
-        title="Chuva Acumulada por Ano",
-        color="Chuva (mm)"
+    if ano_escolhido == "Todos os Anos":
+
+        chuva_agrupada = (
+            dados_chuva_grafico
+            .groupby("Ano")["Chuva (mm)"]
+            .sum()
+            .reset_index()
+        )
+
+        fig_chuva = px.bar(
+            chuva_agrupada,
+            x="Ano",
+            y="Chuva (mm)",
+            title="Chuva Acumulada por Ano",
+            color="Chuva (mm)"
+        )
+
+    else:
+
+        chuva_agrupada = (
+            dados_chuva_grafico
+            .groupby(["Mes_Num", "Mes_Nome"])["Chuva (mm)"]
+            .sum()
+            .reset_index()
+            .sort_values("Mes_Num")
+        )
+
+        fig_chuva = px.bar(
+            chuva_agrupada,
+            x="Mes_Nome",
+            y="Chuva (mm)",
+            title=f"Chuva Acumulada por Mês em {ano_escolhido}",
+            color="Chuva (mm)",
+            category_orders={
+                "Mes_Nome": meses_pt
+            }
+        )
+
+    st.plotly_chart(
+        fig_chuva,
+        use_container_width=True
     )
 
 else:
 
-    chuva_agrupada = (
-        df_filtrado.groupby(["Mes_Num", "Mes_Nome"])["Chuva (mm)"]
-        .sum()
-        .reset_index()
-        .sort_values("Mes_Num")
+    st.info(
+        "Não existem dados de precipitação para gerar o gráfico neste período."
     )
-
-    fig_chuva = px.bar(
-        chuva_agrupada,
-        x="Mes_Nome",
-        y="Chuva (mm)",
-        title=f"Chuva Acumulada por Mês em {ano_escolhido}",
-        color="Chuva (mm)",
-        category_orders={"Mes_Nome": meses_pt}
-    )
-
-st.plotly_chart(
-    fig_chuva,
-    use_container_width=True
-)
