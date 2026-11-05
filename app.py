@@ -21,7 +21,6 @@ df = carregar_dados()
 
 # Cria colunas auxiliares de Ano e Mês
 df["Ano"] = df["data_hora_utc"].dt.year
-df["Mes_Num"] = df["data_hora_utc"].dt.month
 meses_pt = {
     1: "Janeiro",
     2: "Fevereiro",
@@ -36,7 +35,7 @@ meses_pt = {
     11: "Novembro",
     12: "Dezembro"
 }
-
+df["Mes_Num"] = df["data_hora_utc"].dt.month
 df["Mes_Nome"] = df["Mes_Num"].map(meses_pt)
 df["Mes_Nome"] = df["data_hora_utc"].dt.month_name()
 
