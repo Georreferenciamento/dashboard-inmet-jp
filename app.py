@@ -7,7 +7,7 @@ st.set_page_config(
     page_title="Dashboard Meteorológico - INMET", layout="wide"
 )
 
-st.title("📊 Painel Meteorológico Avançado (INMET - João Pessoa)")
+st.title("📊 Painel Meteorológico (INMET - João Pessoa)")
 
 
 # Função para carregar os dados otimizados
