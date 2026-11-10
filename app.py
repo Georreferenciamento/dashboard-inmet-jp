@@ -40,15 +40,6 @@ def carregar_dados():
 
     df = pd.read_parquet("meteorologia_inmet_2000_2026_tratado.parquet")
 
-# 1. Inversão da ordem dos anos (do mais recente para o mais antigo)
-anos_disponiveis = sorted(df['ano'].unique(), reverse=True)
-
-# 2. Interface na Sidebar
-st.sidebar.title("Filtros")
-ano_selecionado = st.sidebar.selectbox("Ano:", options=anos_disponiveis)
-
-# Mensagem informativa discreta na sidebar
-st.sidebar.caption("🕒 *Horários em UTC (Subtraia 3h para a hora local de João Pessoa).*")
     
     return df
 
