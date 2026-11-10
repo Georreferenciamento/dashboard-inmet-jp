@@ -86,6 +86,7 @@ st.subheader(
     f"📈 Indicadores Principais ({ano_escolhido} / {mes_escolhido})"
 
 )
+st.caption("🕒 Horários em UTC (UTC-3 em relação a João Pessoa).")
 
 # Inicialização dos indicadores
 
