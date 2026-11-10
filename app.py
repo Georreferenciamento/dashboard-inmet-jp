@@ -87,6 +87,8 @@ st.subheader(
 
 )
 st.caption("🕒 Horários em UTC (UTC-3 em relação a João Pessoa).")
+st.markdown("---")
+st.markdown("📌 **Fonte dos dados:** [INMET - Tabela de Estações (A320)](https://tempo.inmet.gov.br/TabelaEstacoes/A320)", unsafe_allow_html=True)
 
 # Inicialização dos indicadores
 
