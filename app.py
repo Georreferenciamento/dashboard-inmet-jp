@@ -52,7 +52,7 @@ df["Mes_Nome"] = df["Mes_Num"].apply(
 st.sidebar.header("Filtros de Análise")
 
 # Filtro de ano
-anos_disponiveis = sorted(df["Ano"].dropna().unique())
+anos_disponiveis = sorted(df["Ano"].dropna().unique(), reverse=True)
 ano_escolhido = st.sidebar.selectbox(
     "Selecione o Ano",
     ["Todos os Anos"] + list(anos_disponiveis)
