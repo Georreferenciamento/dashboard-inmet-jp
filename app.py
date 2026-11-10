@@ -12,6 +12,11 @@ st.set_page_config(
 @st.cache_data
 def carregar_dados():
     df = pd.read_parquet('meteorologia_inmet_2000_2026_tratado.parquet')
+    
+    # Garante que a coluna 'ano' existe extraindo-a do campo de data/hora se não estiver presente
+    if 'ano' not in df.columns and 'data_hora_utc' in df.columns:
+        df['ano'] = pd.to_datetime(df['data_hora_utc']).dt.year
+        
     return df
 
 df = carregar_dados()
