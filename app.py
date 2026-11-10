@@ -1,64 +1,646 @@
-import streamlit as st
 import pandas as pd
 
-# Configuração da página
+import plotly.express as px
+
+import streamlit as st
+
+
+
+# -------------------------------------------------------------------
+
+# CONFIGURAÇÃO DA PÁGINA
+
+# -------------------------------------------------------------------
+
 st.set_page_config(
-    page_title="Dashboard Meteorológico - INMET João Pessoa",
-    page_icon="🌤️",
+
+    page_title="Dashboard Meteorológico - INMET",
+
     layout="wide"
+
 )
 
-# Carregamento dos dados com cache para otimizar a performance
+
+
+st.title("📊 Painel Meteorológico (INMET - João Pessoa)")
+
+
+
+
+
+# -------------------------------------------------------------------
+
+# CARREGAMENTO DOS DADOS
+
+# -------------------------------------------------------------------
+
 @st.cache_data
+
 def carregar_dados():
-    df = pd.read_parquet('meteorologia_inmet_2000_2026_tratado.parquet')
+
+    df = pd.read_parquet("meteorologia_inmet_2000_2026_tratado.parquet")
+
     
-    # Garante que a coluna 'ano' existe extraindo-a do campo de data/hora se não estiver presente
-    if 'ano' not in df.columns and 'data_hora_utc' in df.columns:
-        df['ano'] = pd.to_datetime(df['data_hora_utc']).dt.year
-        
     return df
+
+
+
+
 
 df = carregar_dados()
 
-# --- BARRA LATERAL (FILTROS) ---
-st.sidebar.header("⚙️ Filtros")
 
-# 1. Ajuste da ordem dos anos (do mais recente para o mais antigo)
-anos_disponiveis = sorted(df['ano'].unique(), reverse=True)
-ano_selecionado = st.sidebar.selectbox(
-    "Selecione o Ano:",
-    options=anos_disponiveis,
-    help="Os registos seguem o padrão UTC (Hora Universal)."
+
+# Garante que a coluna seja do tipo data
+
+df["data_hora_utc"] = pd.to_datetime(df["data_hora_utc"])
+
+
+
+
+
+# -------------------------------------------------------------------
+
+# COLUNAS AUXILIARES DE DATA
+
+# -------------------------------------------------------------------
+
+df["Ano"] = df["data_hora_utc"].dt.year
+
+df["Mes_Num"] = df["data_hora_utc"].dt.month
+
+
+
+# Nomes dos meses em português
+
+meses_pt = [
+
+    "Janeiro",
+
+    "Fevereiro",
+
+    "Março",
+
+    "Abril",
+
+    "Maio",
+
+    "Junho",
+
+    "Julho",
+
+    "Agosto",
+
+    "Setembro",
+
+    "Outubro",
+
+    "Novembro",
+
+    "Dezembro"
+
+]
+
+
+
+df["Mes_Nome"] = df["Mes_Num"].apply(
+
+    lambda x: meses_pt[int(x) - 1] if pd.notna(x) else None
+
 )
 
-# 2. Nota informativa sobre o fuso horário
-st.sidebar.markdown("---")
-st.sidebar.caption("🕒 **Fuso Horário:** Os dados são apresentados no padrão UTC (INMET). Para obter o horário local de João Pessoa, subtraia 3 horas (UTC-3).")
 
-# --- CORPO PRINCIPAL DO DASHBOARD ---
-st.title("🌤️ Dashboard Meteorológico — João Pessoa / PB")
-st.markdown(f"Exibindo dados consolidados de **2000 a 2026** *(Ano selecionado: **{ano_selecionado}**)*")
 
-# Filtrar dados pelo ano selecionado
-df_filtrado = df[df['ano'] == ano_selecionado]
 
-# Métrica rápida do ano selecionado
+
+# -------------------------------------------------------------------
+
+# FILTROS NA BARRA LATERAL
+
+# -------------------------------------------------------------------
+
+st.sidebar.header("Filtros de Análise")
+
+
+
+# Filtro de ano
+
+anos_disponiveis = sorted(df["Ano"].dropna().unique())
+
+
+
+ano_escolhido = st.sidebar.selectbox(
+
+    "Selecione o Ano",
+
+    ["Todos os Anos"] + list(anos_disponiveis)
+
+)
+
+
+
+if ano_escolhido != "Todos os Anos":
+
+    df_filtrado = df[df["Ano"] == int(ano_escolhido)]
+
+else:
+
+    df_filtrado = df.copy()
+
+
+
+
+
+# Filtro de mês
+
+meses_disponiveis = [
+
+    mes for mes in meses_pt
+
+    if mes in df_filtrado["Mes_Nome"].values
+
+]
+
+
+
+mes_escolhido = st.sidebar.selectbox(
+
+    "Selecione o Mês",
+
+    ["Todos os Meses"] + meses_disponiveis
+
+)
+
+
+
+if mes_escolhido != "Todos os Meses":
+
+    df_filtrado = df_filtrado[
+
+        df_filtrado["Mes_Nome"] == mes_escolhido
+
+    ]
+
+
+
+
+
+# -------------------------------------------------------------------
+
+# INDICADORES PRINCIPAIS (KPIs)
+
+# -------------------------------------------------------------------
+
+st.subheader(
+
+    f"📈 Indicadores Principais ({ano_escolhido} / {mes_escolhido})"
+
+)
+
+
+
+# Inicialização dos indicadores
+
+temp_max_val = None
+
+data_max_val = "N/D"
+
+
+
+temp_min_val = None
+
+data_min_val = "N/D"
+
+
+
+chuva_total = None
+
+umidade_media = None
+
+
+
+
+
+if not df_filtrado.empty:
+
+
+
+    # ---------------------------------------------------------------
+
+    # TEMPERATURA MÁXIMA
+
+    # ---------------------------------------------------------------
+
+    dados_max = df_filtrado.dropna(
+
+        subset=["Temp. Max. (C)"]
+
+    )
+
+
+
+    if not dados_max.empty:
+
+
+
+        idx_max = dados_max["Temp. Max. (C)"].idxmax()
+
+        row_max = dados_max.loc[idx_max]
+
+
+
+        temp_max_val = row_max["Temp. Max. (C)"]
+
+
+
+        data_max_val = row_max["data_hora_utc"].strftime(
+
+            "%d/%m/%Y às %H:%M"
+
+        )
+
+
+
+
+
+    # ---------------------------------------------------------------
+
+    # TEMPERATURA MÍNIMA
+
+    # ---------------------------------------------------------------
+
+    dados_min = df_filtrado.dropna(
+
+        subset=["Temp. Min. (C)"]
+
+    )
+
+
+
+    if not dados_min.empty:
+
+
+
+        idx_min = dados_min["Temp. Min. (C)"].idxmin()
+
+        row_min = dados_min.loc[idx_min]
+
+
+
+        temp_min_val = row_min["Temp. Min. (C)"]
+
+
+
+        data_min_val = row_min["data_hora_utc"].strftime(
+
+            "%d/%m/%Y às %H:%M"
+
+        )
+
+
+
+
+
+    # ---------------------------------------------------------------
+
+    # CHUVA ACUMULADA
+
+    # ---------------------------------------------------------------
+
+    dados_chuva = df_filtrado["Chuva (mm)"].dropna()
+
+
+
+    if not dados_chuva.empty:
+
+        chuva_total = dados_chuva.sum()
+
+
+
+
+
+    # ---------------------------------------------------------------
+
+    # UMIDADE MÉDIA
+
+    # ---------------------------------------------------------------
+
+    dados_umidade = df_filtrado["Umi. Ins. (%)"].dropna()
+
+
+
+    if not dados_umidade.empty:
+
+        umidade_media = dados_umidade.mean()
+
+
+
+
+
+# -------------------------------------------------------------------
+
+# EXIBIÇÃO DOS INDICADORES
+
+# -------------------------------------------------------------------
+
 col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.metric("Total de Registos", f"{len(df_filtrado):,}")
-with col2:
-    temp_max = df_filtrado['temperatura_c'].max() if 'temperatura_c' in df_filtrado.columns else "N/A"
-    st.metric("Temp. Máxima", f"{temp_max} °C" if temp_max != "N/A" else "N/A")
-with col3:
-    temp_min = df_filtrado['temperatura_c'].min() if 'temperatura_c' in df_filtrado.columns else "N/A"
-    st.metric("Temp. Mínima", f"{temp_min} °C" if temp_min != "N/A" else "N/A")
-with col4:
-    precip_total = df_filtrado['precipitacao_mm'].sum() if 'precipitacao_mm' in df_filtrado.columns else "N/A"
-    st.metric("Chuva Acumulada", f"{precip_total:.1f} mm" if isinstance(precip_total, (int, float)) else "N/A")
 
-st.divider()
 
-# Exibição dos dados filtrados
-st.subheader(f"📊 Registos do Ano de {ano_selecionado}")
-st.dataframe(df_filtrado, use_container_width=True)
+
+col1.metric(
+
+    "🌡️ Temp. Máxima",
+
+    f"{temp_max_val:.1f} °C" if temp_max_val is not None else "N/D"
+
+)
+
+
+
+col1.caption(
+
+    f"📅 Ocorrido em: {data_max_val}"
+
+)
+
+
+
+col2.metric(
+
+    "❄️ Temp. Mínima",
+
+    f"{temp_min_val:.1f} °C" if temp_min_val is not None else "N/D"
+
+)
+
+
+
+col2.caption(
+
+    f"📅 Ocorrido em: {data_min_val}"
+
+)
+
+
+
+col3.metric(
+
+    "🌧️ Chuva Acumulada",
+
+    f"{chuva_total:.1f} mm" if chuva_total is not None else "N/D"
+
+)
+
+
+
+col4.metric(
+
+    "💧 Umidade Média",
+
+    f"{umidade_media:.1f} %" if umidade_media is not None else "N/D"
+
+)
+
+
+
+
+
+# -------------------------------------------------------------------
+
+# AVISOS SOBRE AUSÊNCIA DE DADOS
+
+# -------------------------------------------------------------------
+
+if df_filtrado.empty:
+
+
+
+    st.warning(
+
+        "Não existem registros para o período selecionado."
+
+    )
+
+
+
+elif (
+
+    temp_max_val is None
+
+    and temp_min_val is None
+
+    and chuva_total is None
+
+    and umidade_media is None
+
+):
+
+
+
+    st.warning(
+
+        "Existem registros, mas não há dados meteorológicos válidos para este período."
+
+    )
+
+
+
+
+
+# -------------------------------------------------------------------
+
+# GRÁFICOS INTERATIVOS
+
+# -------------------------------------------------------------------
+
+st.markdown("---")
+
+
+
+# ---------------------------------------------------------------
+
+# EVOLUÇÃO TÉRMICA
+
+# ---------------------------------------------------------------
+
+st.subheader("Evolução Térmica (Máximas e Mínimas)")
+
+
+
+dados_temp = df_filtrado.dropna(
+
+    subset=["Temp. Max. (C)", "Temp. Min. (C)"],
+
+    how="all"
+
+)
+
+
+
+if not dados_temp.empty:
+
+
+
+    fig_temp = px.line(
+
+        dados_temp,
+
+        x="data_hora_utc",
+
+        y=["Temp. Max. (C)", "Temp. Min. (C)"],
+
+        labels={
+
+            "data_hora_utc": "Data e Hora",
+
+            "value": "Temperatura (°C)",
+
+            "variable": "Métrica"
+
+        }
+
+    )
+
+
+
+    st.plotly_chart(
+
+        fig_temp,
+
+        use_container_width=True
+
+    )
+
+
+
+else:
+
+
+
+    st.info(
+
+        "Não existem dados de temperatura para gerar o gráfico neste período."
+
+    )
+
+
+
+
+
+# -------------------------------------------------------------------
+
+# PRECIPITAÇÃO ACUMULADA
+
+# -------------------------------------------------------------------
+
+st.subheader("Precipitação Acumulada")
+
+
+
+dados_chuva_grafico = df_filtrado.dropna(
+
+    subset=["Chuva (mm)"]
+
+)
+
+
+
+if not dados_chuva_grafico.empty:
+
+
+
+    if ano_escolhido == "Todos os Anos":
+
+
+
+        chuva_agrupada = (
+
+            dados_chuva_grafico
+
+            .groupby("Ano")["Chuva (mm)"]
+
+            .sum()
+
+            .reset_index()
+
+        )
+
+
+
+        fig_chuva = px.bar(
+
+            chuva_agrupada,
+
+            x="Ano",
+
+            y="Chuva (mm)",
+
+            title="Chuva Acumulada por Ano",
+
+            color="Chuva (mm)"
+
+        )
+
+
+
+    else:
+
+
+
+        chuva_agrupada = (
+
+            dados_chuva_grafico
+
+            .groupby(["Mes_Num", "Mes_Nome"])["Chuva (mm)"]
+
+            .sum()
+
+            .reset_index()
+
+            .sort_values("Mes_Num")
+
+        )
+
+
+
+        fig_chuva = px.bar(
+
+            chuva_agrupada,
+
+            x="Mes_Nome",
+
+            y="Chuva (mm)",
+
+            title=f"Chuva Acumulada por Mês em {ano_escolhido}",
+
+            color="Chuva (mm)",
+
+            category_orders={
+
+                "Mes_Nome": meses_pt
+
+            }
+
+        )
+
+
+
+    st.plotly_chart(
+
+        fig_chuva,
+
+        use_container_width=True
+
+    )
+
+
+
+else:
+
+
+
+    st.info(
+
+        "Não existem dados de precipitação para gerar o gráfico neste período."
+
+    ) 
