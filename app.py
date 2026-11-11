@@ -285,12 +285,23 @@ else:
     st.info(
         "Não existem dados de precipitação para gerar o gráfico neste período."
     ) 
-
+# -------------------------------------------------------------------
+# TOP 10 MAIORES TEMPERATURAS MÁXIMAS
+# -------------------------------------------------------------------
 st.markdown("---")
+st.subheader("🔥 Top 10 Maiores Temperaturas Máximas")
 
-# 10 maiores temperaturas máximas registradas
-st.subheader("🔥 Top 10 Majores Temperaturas Máximas")
+# Verifica se a coluna de temperatura máxima existe antes de processar
+coluna_temp_max = "Temp. Max. (C)"
 
-top_10_temp = df.nlargest(10, 'temperatura_c')[['data_hora_utc', 'temperatura_c', 'umidade_relativa_%']]
-st.dataframe(top_10_temp, use_container_width=True)
+if coluna_temp_max in df.columns:
+    # Seleciona os 10 maiores registos da coluna correta
+    top_10_temp = df.nlargest(10, coluna_temp_max)
+    
+    # Exibe as colunas principais de interesse formatadas
+    colunas_exibir = [col for col in ["data_hora_utc", coluna_temp_max, "Temp. Min. (C)", "Chuva (mm)", "Umi. Ins. (%)"] if col in df.columns]
+    
+    st.dataframe(top_10_temp[colunas_exibir], use_container_width=True)
+else:
+    st.error(f"A coluna '{coluna_temp_max}' não foi encontrada na base de dados.")
 
