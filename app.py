@@ -292,15 +292,6 @@ st.markdown("---")
 st.subheader(f"10 Maiores Temperaturas Máximas ({ano_escolhido} / {mes_escolhido})")
 st.caption(" Horários em UTC (UTC-3 em relação a João Pessoa).")
 coluna_temp_max = "Temp. Max. (C)"
-
-# -------------------------------------------------------------------
-# TOP 10 MAIORES TEMPERATURAS MÁXIMAS (Otimizado)
-# -------------------------------------------------------------------
-st.markdown("---")
-st.subheader(f"🔥 Top 10 Maiores Temperaturas Máximas ({ano_escolhido} / {mes_escolhido})")
-
-coluna_temp_max = "Temp. Max. (C)"
-
 if not df_filtrado.empty and coluna_temp_max in df_filtrado.columns:
     # Seleciona os 10 maiores e recolhe apenas data/hora e temperatura
     top_10_temp = df_filtrado.nlargest(10, coluna_temp_max)[["data_hora_utc", coluna_temp_max]].copy()
