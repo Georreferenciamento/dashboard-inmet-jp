@@ -290,19 +290,31 @@ else:
 # -------------------------------------------------------------------
 st.markdown("---")
 st.subheader(f"10 Maiores Temperaturas Máximas ({ano_escolhido} / {mes_escolhido})")
+st.caption(" Horários em UTC (UTC-3 em relação a João Pessoa).")
+coluna_temp_max = "Temp. Max. (C)"
+
+# -------------------------------------------------------------------
+# TOP 10 MAIORES TEMPERATURAS MÁXIMAS (Otimizado)
+# -------------------------------------------------------------------
+st.markdown("---")
+st.subheader(f"🔥 Top 10 Maiores Temperaturas Máximas ({ano_escolhido} / {mes_escolhido})")
 
 coluna_temp_max = "Temp. Max. (C)"
 
 if not df_filtrado.empty and coluna_temp_max in df_filtrado.columns:
-    # Usa df_filtrado para respeitar o ano e mês selecionados
-    top_10_temp = df_filtrado.nlargest(10, coluna_temp_max)
+    # Seleciona os 10 maiores e recolhe apenas data/hora e temperatura
+    top_10_temp = df_filtrado.nlargest(10, coluna_temp_max)[["data_hora_utc", coluna_temp_max]].copy()
     
-    colunas_exibir = [
-        col for col in ["data_hora_utc", coluna_temp_max] 
-        if col in df_filtrado.columns
-    ]
+    # Formata a data e hora para ficar mais limpa (ex: 15/01/2026 14:00)
+    top_10_temp["data_hora_utc"] = top_10_temp["data_hora_utc"].dt.strftime("%d/%m/%Y %H:%M")
     
-    st.dataframe(top_10_temp[colunas_exibir], use_container_width=True)
+    # Renomeia os cabeçalhos para o português amigável
+    top_10_temp = top_10_temp.rename(columns={
+        "data_hora_utc": "Data e Hora (UTC)",
+        coluna_temp_max: "Temperatura Máxima (°C)"
+    })
+    
+    # Exibe a tabela ocupando apenas a largura necessária e sem o índice lateral
+    st.dataframe(top_10_temp, use_container_width=False, hide_index=True)
 else:
     st.warning("Não há dados suficientes para exibir o Top 10 no período selecionado.")
-
