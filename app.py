@@ -299,7 +299,7 @@ if coluna_temp_max in df.columns:
     top_10_temp = df.nlargest(10, coluna_temp_max)
     
     # Exibe as colunas principais de interesse formatadas
-    colunas_exibir = [col for col in ["data_hora_utc", coluna_temp_max, "Temp. Min. (C)", "Chuva (mm)", "Umi. Ins. (%)"] if col in df.columns]
+    colunas_exibir = [col for col in ["data_hora_utc", coluna_temp_max, "Temp. Min. (C)"] if col in df.columns]
     
     st.dataframe(top_10_temp[colunas_exibir], use_container_width=True)
 else:
