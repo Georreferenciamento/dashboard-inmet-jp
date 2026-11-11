@@ -289,7 +289,7 @@ else:
 # TOP 10 MAIORES TEMPERATURAS MÁXIMAS 
 # -------------------------------------------------------------------
 st.markdown("---")
-st.subheader(f"🔥 Top 10 Maiores Temperaturas Máximas ({ano_escolhido} / {mes_escolhido})")
+st.subheader(f"10 Maiores Temperaturas Máximas ({ano_escolhido} / {mes_escolhido})")
 
 coluna_temp_max = "Temp. Max. (C)"
 
