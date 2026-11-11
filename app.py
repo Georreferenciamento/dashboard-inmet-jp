@@ -285,3 +285,12 @@ else:
     st.info(
         "Não existem dados de precipitação para gerar o gráfico neste período."
     ) 
+
+st.markdown("---")
+
+# 10 maiores temperaturas máximas registradas
+st.subheader("🔥 Top 10 Majores Temperaturas Máximas")
+
+top_10_temp = df.nlargest(10, 'temperatura_c')[['data_hora_utc', 'temperatura_c', 'umidade_relativa_%']]
+st.dataframe(top_10_temp, use_container_width=True)
+
