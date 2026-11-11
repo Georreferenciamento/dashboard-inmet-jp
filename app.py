@@ -14,11 +14,18 @@ st.set_page_config(
 st.title("📊 Painel Meteorológico (INMET - João Pessoa)")
 
 # -------------------------------------------------------------------
-# CARREGAMENTO DOS DADOS E CÁLCULO DE SENSAÇÃO TÉRMICA
+# CARREGAMENTO DOS DADOS (VIA LINK RAW DO GITHUB) E CÁLCULO
 # -------------------------------------------------------------------
 @st.cache_data
 def carregar_dados():
-    df = pd.read_parquet("meteorologia_inmet_2000_2026_tratado.parquet")  
+    # URL RAW oficial do ficheiro no seu repositório GitHub
+    url = "https://raw.githubusercontent.com/Georreferenciamento/dashboard-inmet-jp/main/meteorologia_inmet_2000_2026_tratado.parquet"
+    
+    try:
+        df = pd.read_parquet(url)
+    except Exception:
+        # Fallback para leitura local caso execute na sua máquina
+        df = pd.read_parquet("meteorologia_inmet_2000_2026_tratado.parquet")  
     
     # Garante que a coluna seja do tipo data
     df["data_hora_utc"] = pd.to_datetime(df["data_hora_utc"])
